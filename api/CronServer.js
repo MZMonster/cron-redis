@@ -11,6 +11,8 @@
 var redisConfig = require('../config/redis');
 var redisKey = require('../config/redisKey');
 var bluebird = require('bluebird');
+var parser = require('cron-parser');
+var moment = require('moment');
 
 var redis = require("redis");
 bluebird.promisifyAll(redis.RedisClient.prototype);
@@ -60,6 +62,7 @@ client2.on("pmessage", function (pattern, channel, message) {
             if (name) { // 存在这个 app
               message = message.replace(appName + ':',''); //  截取 {Object}
               console.log(appName + 'is OK', message);
+              addTask(message); // 是否是循环任务, 如果是 继续添加到任务列表
               message = JSON.parse(message);
               client3.publish(message.channel, JSON.stringify(message));
             }
@@ -71,14 +74,44 @@ client2.on("pmessage", function (pattern, channel, message) {
   }
 });
 
+/**
+ * 检查定时任务的时间是否过期
+ * @param rule  *    *    *    *    *    *
+ * @return string | boolean 过期返回 false, 否则返回过期的毫秒数
+ */
+function checkRule(rule){
+  var interval = parser.parseExpression(rule);
+  var next = interval.next();
+  if (next.done) {
+    return false;
+  }else {
+    var date = new Date(next.toString());
+    return moment(date).unix() - moment().unix();
+  }
+}
+
 // 任务接受通道,设置过期值
+function addTask(message) {
+  var obj;
+  try {
+    obj  = JSON.parse(message);
+    console.log('received ' + obj.app + '\'s task ' + obj.method);
+    var ttl = checkRule(obj.rule);
+    if (ttl) {
+      console.log('task will be run after %s second', ttl);
+      client3.set(getAppSystemKey(obj.app), obj.app); // 注册 app, 设置任务的 app 到 app 集合,用来做分析处理
+      client3.setex(TASK_PREFIX + obj.app + ':' + message, ttl, ''); // 设置过期时间
+    }
+  } catch (err) {
+    console.error(err);
+    console.error('task error');
+  }
+}
+
 client1.on('message', function (channel, message) {
   switch (channel){
     case TASK_CHANNEL: {    // 处理完成, 通知 client
-      var obj = JSON.parse(message);
-      console.log('received ' + obj.app + '\'s task ' + obj.name);
-      client3.set(getAppSystemKey(obj.app), obj.app); // 注册 app, 设置任务的 app 到 app 集合,用来做分析处理
-      client3.setex(TASK_PREFIX + obj.app + ':' + message, obj.ttl, ''); // 设置过期时间
+      addTask(message);
     }
   }
 });

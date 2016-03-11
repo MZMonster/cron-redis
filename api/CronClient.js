@@ -9,7 +9,6 @@ bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
 
 var client1, client2, client3 ;
-var begin = false;
 var TASK_FINISH_CHANNEL = 'TASK_FINASH:';  // 定时任务执行的频道
 var TASK_CHANNEL = redisKey.cron_task_queue;
 var TASK_PREFIX =  redisKey.prefix;
@@ -29,11 +28,6 @@ function publish(task){
  * 开始监听任务完成
  */
 function listenBegin(){
-  if (begin) { // 已经开始监听,则退出.
-    begin = true;
-    return ;
-  }
-  console.log('begin');
   // 处理定时任务的调用逻辑
   client2.on('message', function (channel, message) {
     message = message.replace(TASK_PREFIX,'');
