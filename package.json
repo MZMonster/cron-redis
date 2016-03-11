@@ -1,0 +1,18 @@
+{
+  "name": "cron-redis",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^3.3.4",
+    "cron": "^1.1.0",
+    "moment": "^2.12.0",
+    "node-schedule": "^1.0.0",
+    "redis": "^2.4.2"
+  }
+}
