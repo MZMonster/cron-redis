@@ -1,4 +1,6 @@
-# redis 定时任务 ,支持 cluster
+# (Out of date )  see bull
+
+##redis 定时任务 ,支持 cluster
 基于 redis 的 键空间过期, 
 
 ** redis 版本 2.8 才支持 **

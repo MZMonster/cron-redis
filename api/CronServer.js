@@ -13,6 +13,8 @@ var redisKey = require('../config/redisKey');
 var bluebird = require('bluebird');
 var parser = require('cron-parser');
 var moment = require('moment');
+const Queue = require('bull');
+var client = Queue('test', 6379, '127.0.0.1');
 
 var redis = require("redis");
 bluebird.promisifyAll(redis.RedisClient.prototype);

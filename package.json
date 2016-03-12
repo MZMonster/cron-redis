@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "bluebird": "^3.3.4",
+    "bull": "^0.7.2",
     "cron": "^1.1.0",
     "cron-parser": "^1.1.0",
     "moment": "^2.12.0",
