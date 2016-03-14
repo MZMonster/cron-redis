@@ -37,14 +37,19 @@ init config
 
 * appName {String} what your app's name?
 * redisConfig {Object}  
-    ```
-    {
-      host: '127.0.0.1',
-      port: 6379,
-      password: '',
-      db: 0
-      }
-    ```
+    
+
+```
+{
+  host: '127.0.0.1',
+  port: 6379,
+  DB: 1,
+  opts: {
+    auth_pass: 'root',
+    password: 'root'
+  }
+}
+```
  
  
 #### register
@@ -57,3 +62,29 @@ add a task to queue
 * task {Object}
   * method {String} the name of method  will be callback.
   * params {Array} 
+  * rule {options}  cron rule . {Date} or {* */1 * * * *}  
+  
+ 
+ Supported format
+ ========
+ 
+ ```
+ *    *    *    *    *    *
+ ┬    ┬    ┬    ┬    ┬    ┬
+ │    │    │    │    │    |
+ │    │    │    │    │    └ day of week (0 - 7) (0 or 7 is Sun)
+ │    │    │    │    └───── month (1 - 12)
+ │    │    │    └────────── day of month (1 - 31)
+ │    │    └─────────────── hour (0 - 23)
+ │    └──────────────────── minute (0 - 59)
+ └───────────────────────── second (0 - 59, optional)
+ ```
+or 
+
+```
+new Date();
+moment().add(3, 's').toDate()
+```
+
+## More 
+[bull](https://github.com/OptimalBits/bull) 
