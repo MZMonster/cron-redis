@@ -4,6 +4,9 @@
 module.exports = {
   host: '127.0.0.1',
   port: 6379,
-  password: '',
-  db: 0
+  DB: 1,
+  opts: {
+    auth_pass: 'root',
+    password: 'root'
+  }
 };

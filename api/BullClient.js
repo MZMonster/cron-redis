@@ -4,8 +4,10 @@
 'use strict';
 
 const Queue = require('bull');
+const logger = require('winston');
 var methods = {};
 var parser = require('cron-parser');
+var keysPrefix = 'bull:';
 var queue;
 
 /**
@@ -28,32 +30,33 @@ function getNextDate(interval, next){
   if (timeOffset < 1000) {
     next = interval.next();
     return getNextDate(interval, next);
-  }else if (timeOffset < 60000) { // 小于1分钟 设置为1分钟,防止重复调用定时任务
+  }else if (timeOffset < 60000) { // cron 格式的定时 小于1分钟 设置为1分钟,防止重复调用定时任务
     timeOffset = 60000;
   }
   return timeOffset;
 }
 
 function init(app, redisConfig) {
-  queue = Queue(app, redisConfig.port, redisConfig.host, {
-    password: redisConfig.password
-  });
-
+  keysPrefix += (app + ':');
+  queue = Queue(app, {redis: redisConfig});
   queue.on('ready', function () {
-    console.log('%s is ready', app);
+    logger.info('%s is ready', app);
   });
 
   queue.on('failed', function (job, err) {
-    console.log(job.jobId);
-    console.error(err.stack);
+    console.log('error', job.jobId);
+    logger.log('error', err.stack);
   });
 
 // 定时任务处理
-  queue.process(function(job) {
+  queue.process(function(job, done) {
     let task = job.data;
     getMethod(task.method).apply(this, task.params);
-    publish(task); // 如果是重复任务则重新发布
-    return Promise.resolve();
+    var nextTask = task.rule && (task.rule.indexOf('*') > -1);
+    if (nextTask) {
+      publish(task); // 如果是重复任务则重新发布
+    }
+    done();
   });
 }
 
@@ -63,7 +66,6 @@ function init(app, redisConfig) {
  * @return int 过期返回 false, 否则返回过期的毫秒数
  */
 function getTTL(rule){
-
   var interval;
   try {
     interval = parser.parseExpression(rule);
@@ -86,29 +88,49 @@ function getTTL(rule){
 /**
  * 发布一个任务
  * @param task 任务内容
- * @param method  任务需要回调的函数引用
  */
-function publish(task, method){
-  if (method) {
-    methods[method.name] = method;
-  }
+function publish(task){
   var options = {};
   // 存在定时
   if (task.rule) {
     //,并且过期时间小于0
-    let ttl = Math.ceil(getTTL(task.rule) / 1000);
+    let ttl = Math.ceil(getTTL(task.rule));
     if (ttl < 0) {
-      return ;
+      return ttl;
     }
     options.delay = ttl;  // 设置定时任务
   }
-  console.log('publish queue task %s ,' +
-    ' running task after %s seconds', task.method, options.delay || 0);
+  logger.log('publish queue task %s ,' +
+    ' running task after %s seconds', task.method, options.delay || -1);
   queue.add(task, options);
 }
 
+/**
+ *
+ * @param method 任务需要回调的函数引用
+ */
+function register(method){
+  if (method) {
+    methods[method.name] = method;
+  }
+}
+
+//function list(){
+//  var result = [];
+//  return client1.getAsync(keysPrefix + 'id').then((ids) => {
+//    return bluebird.map(ids, function (id) {
+//      return client1.hgetallAsync(id).then((data) => {
+//        result.push(data);
+//      });
+//    })
+//  });
+//}
+
 module.exports = function(app, redisConfig){
   init(app, redisConfig);
-  Queue.publish = publish;
-  return Queue;
+  return {
+    publish: publish,
+    register: register,
+    //list: list
+  };
 }

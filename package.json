@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "cron task for node by redis",
   "main": "app.js",
+  "email": "shanelau1021@gmail.com",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,15 +11,17 @@
     "type": "git",
     "url": "https://github.com/MZMonster/cron-redis.git"
   },
-  "author": "",
+  "author": "Liu Xing <shanelau1021@gmail.com> (http://kissliux.github.io)",
   "license": "ISC",
   "dependencies": {
     "bluebird": "^3.3.4",
     "bull": "^0.7.2",
-    "cron": "^1.1.0",
     "cron-parser": "^1.1.0",
-    "moment": "^2.12.0",
-    "node-schedule": "^1.0.0",
-    "redis": "^2.4.2"
+    "redis": "^2.4.2",
+    "winston": "^2.2.0"
+  },
+  "devDependencies": {
+    "mocha": "^2.4.5",
+    "moment": "^2.12.0"
   }
 }
