@@ -65,8 +65,7 @@ add a task to queue
   * rule {options}  cron rule . {Date} or {* */1 * * * *}  
   
  
- Supported format
- ========
+###### Supported format
  
  ```
  *    *    *    *    *    *
@@ -86,5 +85,5 @@ new Date();
 moment().add(3, 's').toDate()
 ```
 
-## More 
+### More 
 [bull](https://github.com/OptimalBits/bull) 
