@@ -11,21 +11,29 @@ Inspired by the [bull](https://github.com/OptimalBits/bull)
 3. publish task
 
 ```
-var cronRedis = require('cron-redis')(appName, redisConfig);
+var redisConfig = require('../config/redis');
+const queue = require('../api/BullClient')('test', redisConfig);
+
+var moment = require('moment');
 
 function hello (x, y){
-    return x + y;
+  console.log(new Date());
+  console.log(x + ' + '+ y +' = %s', x+y);
 }
-cronRedis.register(hello); 
-
-var task = {
+var task1 = {
   method: hello.name,
   params: [2, 3],
-  rule: new Date()
-};
+  rule: moment().add(3, 's').toDate()
+}
 
-// publish a task
-cronService.publish(task);
+var task2 = {
+  method: hello.name,
+  params: [4, 5],
+  rule: '* */1 * * * *'
+}
+queue.register(hello)
+queue.publish(task1);
+queue.publish(task2);
 
 
 ```
