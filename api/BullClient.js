@@ -5,10 +5,13 @@
 
 const Queue = require('bull');
 const logger = require('winston');
+const redis = require('redis');
+const bluebird = require('bluebird');
 var methods = {};
 var parser = require('cron-parser');
 var keysPrefix = 'bull:';
-var queue;
+
+var queue, redisClient;
 
 /**
  * 根据函数名查找函数实现
@@ -39,6 +42,8 @@ function getNextDate(interval, next){
 function init(app, redisConfig) {
   keysPrefix += (app + ':');
   queue = Queue(app, {redis: redisConfig});
+  redisClient = redis.createClient(redisConfig);
+  redisClient.select(redisConfig.DB);
   queue.on('ready', function () {
     logger.info('%s is ready', app);
   });
@@ -115,22 +120,45 @@ function register(method){
   }
 }
 
-//function list(){
-//  var result = [];
-//  return client1.getAsync(keysPrefix + 'id').then((ids) => {
-//    return bluebird.map(ids, function (id) {
-//      return client1.hgetallAsync(id).then((data) => {
-//        result.push(data);
-//      });
-//    })
-//  });
-//}
+function list(){
+  queue.clean(1000);
+  var result = [];
+  return redisClient.keysAsync(keysPrefix + '*').then((ids) => {
+    return bluebird.map(ids, function (id) {
+      var key = id.split(':');
+      if (id && key.length === 3 && parseInt(key[2]) > 0) {
+        return redisClient.hgetallAsync(id).then((data) => {
+          data.key = id;
+          result.push(data);
+          return data;
+        });
+      }
+    })
+  }).then(() => {
+    return result;
+  }).catch(function(err){
+    console.error(err);
+  });
+}
+
+/**
+ * 删除 hash
+ * @param key
+ * @returns {*}
+ */
+function del(key){
+  return redisClient.delAsync(key).then((data) => {
+    queue.clean(1000);
+    return data;
+  });
+}
 
 module.exports = function(app, redisConfig){
   init(app, redisConfig);
   return {
     publish: publish,
     register: register,
-    //list: list
+    list: list,
+    del: del
   };
 }

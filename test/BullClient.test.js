@@ -7,7 +7,6 @@ const queue = require('../api/BullClient')('test', redisConfig);
 var moment = require('moment');
 
 function hello (x, y){
-  console.log(new Date());
   console.log(x + ' + '+ y +' = %s', x+y);
 }
 var task1 = {
@@ -23,4 +22,8 @@ var task2 = {
 }
 queue.register(hello)
 queue.publish(task1);
-queue.publish(task2);
+//queue.publish(task2);
+//queue.del('bull:test:139');
+queue.list().then((data) => {
+  console.log(data);
+});

@@ -71,6 +71,7 @@ add a task to queue
   * method {String} the name of method  will be callback.
   * params {Array} 
   * rule {options}  cron rule . {Date} or {* */1 * * * *}  
+  * desc {options} description for task
   
  
 ###### Supported format
@@ -92,6 +93,31 @@ or
 new Date();
 moment().add(3, 's').toDate()
 ```
+
+#### list 
+the queue task in redis
+
+* @return {Array[Object]} 
+
+```
+  [{ data: '{"method":"hello","params":[4,5],"rule":"* */1 * * * *"}',
+    opts: '{"delay":60000}',
+    progress: '0',
+    delay: '0',
+    timestamp: '1458008690942',
+    attempts: '1',
+    attemptsMade: '1',
+    stacktrace: '[]',
+    returnvalue: 'undefined',
+    key: 'bull:test:111' },
+   ]
+```
+
+### del
+delete some hash key
+
+* @param key {string} key of task
+
 
 ### More 
 [bull](https://github.com/OptimalBits/bull) 

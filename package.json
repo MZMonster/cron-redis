@@ -1,6 +1,6 @@
 {
   "name": "cron-redis",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "cron task for node by redis",
   "main": "app.js",
   "email": "shanelau1021@gmail.com",
