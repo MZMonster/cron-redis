@@ -41,6 +41,13 @@ function getNextDate(interval, next){
 
 function init(app, redisConfig) {
   keysPrefix += (app + ':');
+  redisConfig.DB = redisConfig.db || 0;
+  if (redisConfig.password) {
+      redisConfig.auth_pass = redisConfig.password;
+    redisConfig.opts = redisConfig.opts ? redisConfig.opts : {};
+    redisConfig.opts.auth_pass = redisConfig.password;
+    redisConfig.opts.password = redisConfig.password;
+  }
   queue = Queue(app, {redis: redisConfig});
   redisClient = redis.createClient(redisConfig);
   redisClient.select(redisConfig.DB);

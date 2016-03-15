@@ -11,8 +11,14 @@ Inspired by the [bull](https://github.com/OptimalBits/bull)
 3. publish task
 
 ```
-var redisConfig = require('../config/redis');
-const queue = require('../api/BullClient')('test', redisConfig);
+var redisConfig = {
+  host: '127.0.0.1',
+  port: 6379,
+  db: 1,
+  password: 'root',
+  // other redis config
+};
+const queue = require('cron-redis')('test', redisConfig);
 
 var moment = require('moment');
 
