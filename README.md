@@ -78,6 +78,7 @@ add a task to queue
   * params {Array} 
   * rule {options}  cron rule . {Date} or {* */1 * * * *}  
   * desc {options} description for task
+  * uniqueID {options} keep task unique in queue
   
  
 ###### Supported format

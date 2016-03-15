@@ -95,26 +95,55 @@ function getTTL(rule){
   }
 }
 
-
+/**
+ * delete all task uniqueID equals current uniqueID
+ * @param uniqueID
+ * @returns {Promise.<T>}
+ */
+function deleteUniqueTask(uniqueID) {
+  return list().then((tasks) => {
+    return bluebird.map(tasks, function (task) {
+      var obj = JSON.parse(task.data);
+      if (obj.uniqueID && obj.uniqueID === uniqueID) {
+        logger.info('delete task:', task.key);
+        return del(task.key);
+      }else {
+        return bluebird.resolve();
+      }
+    });
+  }).then(() => {
+    queue.clean(1000);
+  });
+}
 
 /**
  * 发布一个任务
  * @param task 任务内容
  */
 function publish(task){
-  var options = {};
-  // 存在定时
-  if (task.rule) {
-    //,并且过期时间小于0
-    let ttl = Math.ceil(getTTL(task.rule));
-    if (ttl < 0) {
-      return ttl;
+  function _publish(){
+    // 存在定时
+    if (task.rule) {
+      //,并且过期时间小于0
+      let ttl = Math.ceil(getTTL(task.rule));
+      if (ttl < 0) {
+        return ttl;
+      }
+      options.delay = ttl;  // 设置定时任务
     }
-    options.delay = ttl;  // 设置定时任务
+    logger.log('publish queue task %s ,' +
+      ' running task after %s seconds', task.method, options.delay || -1);
+    queue.add(task, options);
   }
-  logger.log('publish queue task %s ,' +
-    ' running task after %s seconds', task.method, options.delay || -1);
-  queue.add(task, options);
+
+  var options = {};
+  if (task.uniqueID) {
+    deleteUniqueTask(task.uniqueID).then(() => {
+      _publish();
+    });
+  }else {
+    _publish()
+  }
 }
 
 /**
@@ -128,12 +157,12 @@ function register(method){
 }
 
 function list(){
-  queue.clean(1000);
   var result = [];
   return redisClient.keysAsync(keysPrefix + '*').then((ids) => {
     return bluebird.map(ids, function (id) {
       var key = id.split(':');
       if (id && key.length === 3 && parseInt(key[2]) > 0) {
+
         return redisClient.hgetallAsync(id).then((data) => {
           data.key = id;
           result.push(data);
@@ -150,14 +179,17 @@ function list(){
 
 /**
  * 删除 hash
- * @param key
+ * @param jobID
  * @returns {*}
  */
-function del(key){
-  return redisClient.delAsync(key).then((data) => {
-    queue.clean(1000);
-    return data;
-  });
+function del(jobID){
+  if (jobID) {
+    var id = jobID.split(':')[2];
+    return queue.getJob(id).then((job) => {
+      return job.remove();
+    });
+  }
+  return bluebird.resolve();
 }
 
 module.exports = function(app, redisConfig){
