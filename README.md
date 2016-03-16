@@ -68,7 +68,28 @@ init config
  
 #### register
 register a task 
-* method {Function} // method for cron task callback
+* method {Function | Object} // method for cron task callback
+   
+   ```
+   function hello (){
+      console.log('hello');
+   }
+   queue.register(hello);
+   
+   
+   or 
+   
+   var methods = {
+    hello: function(){
+       console.log('hello');
+    },
+    // and more
+   }
+   
+   queue.register(methods);
+
+   ```
+   
    
 #### publish
 add a task to queue

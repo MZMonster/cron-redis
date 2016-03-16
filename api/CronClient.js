@@ -10,7 +10,8 @@ const bluebird = require('bluebird');
 var methods = {};
 var parser = require('cron-parser');
 var keysPrefix = 'bull:';
-
+bluebird.promisifyAll(redis.RedisClient.prototype);
+bluebird.promisifyAll(redis.Multi.prototype);
 var queue, redisClient;
 
 /**
@@ -103,16 +104,20 @@ function getTTL(rule){
 function deleteUniqueTask(uniqueID) {
   return list().then((tasks) => {
     return bluebird.map(tasks, function (task) {
-      var obj = JSON.parse(task.data);
-      if (obj.uniqueID && obj.uniqueID === uniqueID) {
-        logger.info('delete task:', task.key);
-        return del(task.key);
+      var obj ;
+      if (task.data) {
+        obj = JSON.parse(task.data);
+        if (obj.uniqueID && obj.uniqueID === uniqueID) {
+          logger.info('delete task:', task.key);
+          return del(task.key);
+        }
       }else {
-        return bluebird.resolve();
+        return del(task.key);
       }
     });
   }).then(() => {
     queue.clean(1000);
+    return bluebird.resolve();
   });
 }
 
@@ -134,15 +139,16 @@ function publish(task){
     logger.log('publish queue task %s ,' +
       ' running task after %s seconds', task.method, options.delay || -1);
     queue.add(task, options);
+    return bluebird.resolve();
   }
 
   var options = {};
   if (task.uniqueID) {
-    deleteUniqueTask(task.uniqueID).then(() => {
-      _publish();
+    return deleteUniqueTask(task.uniqueID).then(() => {
+      return _publish();
     });
   }else {
-    _publish()
+    return _publish()
   }
 }
 
@@ -151,6 +157,9 @@ function publish(task){
  * @param method 任务需要回调的函数引用
  */
 function register(method){
+  if (method instanceof Object) {
+    return methods = Object.assign(methods, method);
+  }
   if (method) {
     methods[method.name] = method;
   }
