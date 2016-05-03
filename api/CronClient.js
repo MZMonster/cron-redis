@@ -51,6 +51,7 @@ function init(app, redisConfig) {
   }
   queue = Queue(app, {redis: redisConfig});
   redisClient = redis.createClient(redisConfig);
+  redisClient.on("error", function () {})
   redisClient.select(redisConfig.DB);
   queue.on('ready', function () {
     logger.info('%s is ready', app);
@@ -165,6 +166,7 @@ function register(method){
   }
 }
 
+
 function list(){
   var result = [];
   return redisClient.keysAsync(keysPrefix + '*').then((ids) => {
@@ -195,7 +197,7 @@ function del(jobID){
   if (jobID) {
     var id = jobID.split(':')[2];
     return queue.getJob(id).then((job) => {
-      return job.remove();
+      return job && job.remove();
     });
   }
   return bluebird.resolve();
