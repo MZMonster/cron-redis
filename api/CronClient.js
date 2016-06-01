@@ -158,10 +158,7 @@ function publish(task){
  * @param method 任务需要回调的函数引用
  */
 function register(method){
-  if (method instanceof Object) {
-    return methods = Object.assign(methods, method);
-  }
-  if (method) {
+  if (method && typeof method === 'function') {
     methods[method.name] = method;
   }
 }
