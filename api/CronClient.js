@@ -65,10 +65,12 @@ function init(app, redisConfig) {
 // 定时任务处理
   queue.process(function(job, done) {
     let task = job.data;
-    getMethod(task.method).apply(this, task.params);
-    var nextTask = task.rule && (task.rule.indexOf('*') > -1);
-    if (nextTask) {
-      publish(task); // 如果是重复任务则重新发布
+    if (getMethod(task.method)) {
+      getMethod(task.method).apply(this, task.params);
+      var nextTask = task.rule && (task.rule.indexOf('*') > -1);
+      if (nextTask) {
+        publish(task); // 如果是重复任务则重新发布
+      }
     }
     done();
   });
@@ -107,9 +109,13 @@ function deleteUniqueTask(uniqueID) {
     return bluebird.map(tasks, function (task) {
       var obj ;
       if (task.data) {
-        obj = JSON.parse(task.data);
-        if (obj.uniqueID && obj.uniqueID === uniqueID) {
-          logger.info('delete task:', task.key);
+        try{
+          obj = JSON.parse(task.data);
+          if (obj.uniqueID && obj.uniqueID === uniqueID) {
+            logger.info('delete task:', task.key);
+            return del(task.key);
+          }
+        }catch(err) {
           return del(task.key);
         }
       }else {
@@ -158,33 +164,35 @@ function publish(task){
  * @param method 任务需要回调的函数引用
  */
 function register(method){
-  if (method instanceof Object) {
-    return methods = Object.assign(methods, method);
-  }
   if (method) {
     methods[method.name] = method;
   }
 }
-
-
+/**
+ * 列出所有的定时任务
+ * @returns {Promise.<T>}
+ */
 function list(){
   var result = [];
   return redisClient.keysAsync(keysPrefix + '*').then((ids) => {
     return bluebird.map(ids, function (id) {
       var key = id.split(':');
-      if (id && key.length === 3 && parseInt(key[2]) > 0) {
+      if (id && key.length === 3 && parseInt(key[2]) > 0) { // bull:app:id
 
         return redisClient.hgetallAsync(id).then((data) => {
           data.key = id;
-          result.push(data);
-          return data;
+          if (data.data) {
+            return result.push(data);
+          }
+          // 没有 data 则任务错误,需要移除
+          return del(id);
         });
       }
     })
   }).then(() => {
     return result;
   }).catch(function(err){
-    console.error(err);
+    return result;
   });
 }
 
