@@ -1,5 +1,6 @@
 ## cron task for node by redis
-Inspired by the [bull](https://github.com/OptimalBits/bull) 
+Inspired by the [bull](https://github.com/OptimalBits/bull) Prefectly support in cluster mode.
+
 
 ## feature
 1. 业务方可以定义定时时间、时间结束的触发任务
